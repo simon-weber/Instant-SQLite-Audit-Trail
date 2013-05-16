@@ -17,15 +17,35 @@ class TestAudit(unittest.TestCase):
         audit.detach_log(self.conn)
         self.conn.close()
 
-    def test_to_python(self):
-        self.conn.execute("INSERT INTO tab VALUES('audit', 'this')")
+    def test_string_to_python(self):
+        self.conn.execute("INSERT INTO tab VALUES('a', 'b')")
 
         r = self.conn.execute("SELECT * FROM _audit").fetchone()
         py_val = audit.to_python(r[4])
 
         self.assertEqual(py_val,
-                         [['c1', 'audit'],
-                          ['c2', 'this']])
+                         [['c1', 'a'],
+                          ['c2', 'b']])
+
+    def test_nums_to_python(self):
+        self.conn.execute("INSERT INTO tab VALUES(5, 3.14)")
+
+        r = self.conn.execute("SELECT * FROM _audit").fetchone()
+        py_val = audit.to_python(r[4])
+
+        self.assertEqual(py_val,
+                         [['c1', 5],
+                          ['c2', 3.14]])
+
+    def test_null_to_python(self):
+        self.conn.execute("INSERT INTO tab VALUES(NULL, NULL)")
+
+        r = self.conn.execute("SELECT * FROM _audit").fetchone()
+        py_val = audit.to_python(r[4])
+
+        self.assertEqual(py_val,
+                         [['c1', None],
+                          ['c2', None]])
 
     def test_insert(self):
         self.conn.execute("INSERT INTO tab VALUES('audit', 'this')")
@@ -81,6 +101,26 @@ class TestAudit(unittest.TestCase):
                          (unicode(repr([['c1', 'audit'],
                                         ['c2', 'this']])),
                           None,
+                         ))
+
+    def test_update_null(self):
+        self.conn.execute("INSERT INTO tab VALUES('audit', NULL)")
+        self.assertEqual(
+            self.conn.execute("UPDATE tab SET c2='everything' WHERE"
+                              " c2 is NULL").rowcount,
+            1)
+
+        audit_rows = self.conn.execute("SELECT * FROM _audit").fetchall()
+        self.assertEqual(len(audit_rows), 2)
+
+        r = audit_rows[1]
+
+        self.assertEqual(r[1:3], (u'tab', u'UPDATE'))
+        self.assertEqual(r[3:],
+                         (unicode(repr([['c1', 'audit'],
+                                        ['c2', None]])),
+                          unicode(repr([['c1', 'audit'],
+                                        ['c2', 'everything']])),
                          ))
 
     def test_detach(self):

@@ -68,8 +68,8 @@ def to_python(repr_str):
 
 
 def sqlite_str(var):
-    """Return text to quote some sqlite variable."""
-    return "'''' || %s || ''''" % var
+    """Return text to convert an sqlite variable into a Python repr."""
+    return "(CASE WHEN quote({0})='NULL' then 'None' ELSE quote({0}) END)".format(var)
 
 
 def sqlite_quote(val):
@@ -94,6 +94,7 @@ def select_text(table, col_names, version):
         table=table,
         version=version,
     )
+
     return "(%s)" % slt
 
 

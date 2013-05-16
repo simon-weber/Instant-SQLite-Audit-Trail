@@ -17,7 +17,7 @@ It sets up triggers for create, update and delete on all tables, and places all 
 The audit log stores a modification time, the table, the operation, and the values before and after. Values are stored as Python list reprs (you can use exec them). Here's an example:
 
 ```python
-import audit
+import audit, sqlite3
 
 conn = sqlite3.connect(':memory:')
 conn.execute("CREATE TABLE foo(x,y)")
